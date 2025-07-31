@@ -2,9 +2,11 @@
 const canvas = document.getElementById('game-canvas');
 const context = canvas.getContext('2d');
 
-//獲取訊息框的元素
-const messageTitleEl = document.getElementById('message-title');
-const messageContentEl = document.getElementById('message-content');
+//獲取訊息框
+const messageBox = document.getElementById('message-box');
+//獲取要放置的訊息模板
+const messageTemplates = document.querySelector('#content-templates').children;
+
 
 
 // 設定畫布的解析度
@@ -29,19 +31,13 @@ const player = {
 //互動物件
 const interactiveObjects = [
     {
-        x: 200, y: canvas.height - 100, width: 50, height: 50, color: '#9400d3',
-        title: '關於我 (About Me)',
-        content: '你好！我是一位熱愛創造與設計的開發者。這個網站是我用來展示作品與分享想法的小天地。'
+        x: 200, y: canvas.height - 100, width: 50, height: 50, color: '#9400d3'
     },
     {
-        x: 400, y: canvas.height - 150, width: 50, height: 50, color: '#9400d3',
-        title: '我的作品集 (Portfolio)',
-        content: '這裡放置了我的精選作品，包含網頁設計、應用程式開發與一些有趣的小專案。每一個專案都代表了我的熱情與努力。'
+        x: 400, y: canvas.height - 150, width: 50, height: 50, color: '#9400d3'
     },
     {
-        x: 600, y: canvas.height - 80, width: 50, height: 50, color: '#9400d3',
-        title: '聯絡方式 (Contact)',
-        content: '很高興你逛到這裡！如果有任何合作邀約或想聊聊，可以透過 example@email.com 與我聯繫。期待你的來信！'
+        x: 600, y: canvas.height - 80, width: 50, height: 50, color: '#9400d3'
     }
 ];
 
@@ -93,23 +89,23 @@ function gameLoop() {
 
     //碰撞偵測與互動
     let interacting = false;
-    interactiveObjects.forEach(obj => {
+    interactiveObjects.forEach((obj, index) => {
         //簡單的矩形碰撞偵測
         if (
             player.x > obj.x && player.x < obj.x + obj.width &&
             player.y > obj.y && player.y < obj.y + obj.height
         ) {
             //發生碰撞，更新訊息框內容
-            messageTitleEl.textContent = obj.title;
-            messageContentEl.textContent = obj.content;
+            messageBox.innerHTML = messageTemplates[index+1].innerHTML;
             interacting = true;
         }
     });
 
     //如果沒有跟任何物件互動，就顯示預設訊息
     if (!interacting) {
-        messageTitleEl.textContent = '歡迎來到我的世界！';
-        messageContentEl.textContent = '試著在下方區域移動，探索看看吧！點擊滑鼠可以指定移動的目的地。';
+        messageBox.innerHTML = messageTemplates[0].innerHTML;
+
+
     }
 
 
