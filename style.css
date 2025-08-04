@@ -11,7 +11,7 @@ body {
     width:100%;
     height:100%;
 
-    background-image: url('pixel-background.png');
+    background-image: url('/picture/pixel-background.png');
     background-repeat: repeat;
     /* 讓像素圖保持清晰，不被瀏覽器模糊化 */
     image-rendering: -moz-crisp-edges;
@@ -41,7 +41,7 @@ body {
 
 /*下方的遊戲互動畫布*/
 #game-canvas {
-    background-image: url('canvasbackground.png'); /* 請確保圖片名稱正確 */
+    background-image: url('/picture/canvasbackground.png'); /* 請確保圖片名稱正確 */
     background-repeat: repeat;
     /* 讓像素圖保持清晰，不被瀏覽器模糊化 */
     image-rendering: -moz-crisp-edges;
