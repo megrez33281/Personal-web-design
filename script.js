@@ -12,98 +12,119 @@ canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
 
+//玩家顯示尺寸
+const PLAYER_DISPLAY_WIDTH = 65;
+const PLAYER_DISPLAY_HEIGHT = 100;
 
-//建立一個物件來儲存目前哪些按鍵被按下了
-const keysPressed = {};
-
-//監聽鍵盤按下的事件
-window.addEventListener('keydown', (event) => {
-    //將被按下的按鍵名稱 (例如 "w", "ArrowUp") 設為 true
-    keysPressed[event.key] = true;
-});
-
-//監聽鍵盤放開的事件
-window.addEventListener('keyup', (event) => {
-    //當按鍵放開時，從物件中刪除該按鍵的紀錄
-    delete keysPressed[event.key];
-});
-
-
-//遊戲物件定義
-//像素小人
-const player = {
-    x: 50,
-    y: canvas.height / 2, //初始位置改到畫布中間
-    width: 30,
-    height: 30,
-    color: '#e60073', //一個鮮豔的顏色
-    speed: 3,
-    targetX: 50, // 目標位置
-    targetY: canvas.height / 2
+//動畫設定物件
+const animationConfig = {
+    'down': { row: 0, frames: [0, 1], standingFrame: 0 },
+    'up': { row: 0, frames: [2, 3], standingFrame: 2 },
+    'left': { row: 1, frames: [0, 1, 2, 3], standingFrame: 1 },
+    'right': { row: 2, frames: [0, 1, 2, 3], standingFrame: 1 }
 };
 
-//動態生成互動物件
-const interactiveObjects = [];
-const numObjects = 4;
-const objectWidth = 50;
-const objectHeight = 50;
-const spacing = canvas.width / (numObjects + 1);
-const yPos = (canvas.height / 2) - (objectHeight / 2);
+let playerImages = [[], [], []];
 
-for (let i = 0; i < numObjects; i++) {
-    const xPos = (spacing * (i + 1)) - (objectWidth / 2);
-    interactiveObjects.push({
-        x: xPos,
-        y: yPos,
-        width: objectWidth,
-        height: objectHeight,
-        color: '#9400d3'
+//預載入所有玩家圖片
+function preloadPlayerImages() {
+    const imagePaths = [];
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 4; col++) {
+            const path = `picture/Player/${row}${col}.png`;
+            imagePaths.push(path);
+        }
+    }
+    const promises = imagePaths.map(path => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error(`無法載入圖片: ${path}`));
+            img.src = path;
+        });
+    });
+    return Promise.all(promises).then(loadedImages => {
+        let imageIndex = 0;
+        for (let row = 0; row < 3; row++) {
+            playerImages[row] = [];
+            for (let col = 0; col < 4; col++) {
+                playerImages[row][col] = loadedImages[imageIndex];
+                imageIndex++;
+            }
+        }
+        return "Player images loaded successfully";
     });
 }
 
+//預載入物件圖片
+const objectImagePaths = [ 'picture/Home.png', 'picture/About.png', 'picture/Works.png', 'picture/Skill.png' ];
+function preloadObjectImages(paths) {
+    const promises = paths.map(path => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error(`無法載入圖片: ${path}`));
+            img.src = path;
+        });
+    });
+    return Promise.all(promises);
+}
 
-//處理滑鼠點擊
+
+//鍵盤狀態追蹤
+const keysPressed = {};
+window.addEventListener('keydown', (event) => { keysPressed[event.key.toLowerCase()] = true; });
+window.addEventListener('keyup', (event) => { delete keysPressed[event.key.toLowerCase()]; });
+
+
+//玩家物件定義
+const player = {
+    x: PLAYER_DISPLAY_WIDTH,
+    y: canvas.height / 2,
+    speed: 4,
+    targetX: PLAYER_DISPLAY_WIDTH,
+    targetY: canvas.height / 2,
+    width: PLAYER_DISPLAY_WIDTH,
+    height: PLAYER_DISPLAY_HEIGHT,
+    isMoving: false,
+    wasMoving: false, //記錄上一幀的移動狀態
+    direction: 'down',
+    animationFrameIndex: 0,
+    currentFrame: 0,
+    animationTimer: 0,
+    animationDelay: 12,
+};
+player.currentFrame = animationConfig[player.direction].standingFrame; //初始化站立影格
+
+let interactiveObjects = [];
+const numObjects = 4;
+const objectWidth = 80;
+const objectHeight = 80;
+
+
+//滑鼠點擊事件
 canvas.addEventListener('click', (event) => {
+    Object.keys(keysPressed).forEach(key => delete keysPressed[key]);
+    
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-
     const mouseX = (event.clientX - rect.left) * scaleX;
     const mouseY = (event.clientY - rect.top) * scaleY;
-
     player.targetX = mouseX;
     player.targetY = mouseY;
 });
 
 
-
-//鍵盤移動處理函式
+//鍵盤移動處理
 function handleKeyboardMovement() {
-    let movedByKeyboard = false;
+    let movedByKey = false;
+    if (keysPressed['w'] || keysPressed['arrowup']) { player.y -= player.speed; player.direction = 'up'; movedByKey = true; }
+    if (keysPressed['s'] || keysPressed['arrowdown']) { player.y += player.speed; player.direction = 'down'; movedByKey = true; }
+    if (keysPressed['a'] || keysPressed['arrowleft']) { player.x -= player.speed; player.direction = 'left'; movedByKey = true; }
+    if (keysPressed['d'] || keysPressed['arrowright']) { player.x += player.speed; player.direction = 'right'; movedByKey = true; }
 
-    // 檢查向上移動的按鍵 (W 或 ↑)
-    if (keysPressed['w'] || keysPressed['ArrowUp']) {
-        player.y -= player.speed;
-        movedByKeyboard = true;
-    }
-    // 檢查向下移動的按鍵 (S 或 ↓)
-    if (keysPressed['s'] || keysPressed['ArrowDown']) {
-        player.y += player.speed;
-        movedByKeyboard = true;
-    }
-    // 檢查向左移動的按鍵 (A 或 ←)
-    if (keysPressed['a'] || keysPressed['ArrowLeft']) {
-        player.x -= player.speed;
-        movedByKeyboard = true;
-    }
-    // 檢查向右移動的按鍵 (D 或 →)
-    if (keysPressed['d'] || keysPressed['ArrowRight']) {
-        player.x += player.speed;
-        movedByKeyboard = true;
-    }
-    
-    // 如果是透過鍵盤移動，就更新滑鼠目標點，防止衝突
-    if (movedByKeyboard) {
+    if (movedByKey) {
         player.targetX = player.x;
         player.targetY = player.y;
     }
@@ -112,67 +133,125 @@ function handleKeyboardMovement() {
 
 //核心遊戲迴圈
 function gameLoop() {
-    //清除上一幀的畫面
     context.clearRect(0, 0, canvas.width, canvas.height);
-    //優先處理鍵盤移動
-    handleKeyboardMovement();
 
-    //處理滑鼠點擊的移動
+
+    //在所有移動計算前，先記下當前位置和上一幀的移動狀態
+    const oldX = player.x;
+    const oldY = player.y;
+    player.wasMoving = player.isMoving;
+
+    //處理所有可能的移動輸入
+    handleKeyboardMovement(); //處理鍵盤
+
+    //處理滑鼠
     const dx = player.targetX - player.x;
     const dy = player.targetY - player.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance > player.speed) {
+        //只有當沒有鍵盤輸入時，才讓滑鼠控制方向
+        if (!Object.keys(keysPressed).length) {
+             if (Math.abs(dx) > Math.abs(dy)) {
+                player.direction = dx > 0 ? 'right' : 'left';
+            } else {
+                player.direction = dy > 0 ? 'down' : 'up';
+            }
+        }
         player.x += (dx / distance) * player.speed;
         player.y += (dy / distance) * player.speed;
     } else if (distance > 0) {
-        //如果距離很近，就直接到位，避免抖動
         player.x = player.targetX;
         player.y = player.targetY;
     }
-
-    //新增邊界檢測，防止玩家跑出畫布
+    
+    //處理邊界碰撞，這會修正player.x和player.y
     const halfWidth = player.width / 2;
     const halfHeight = player.height / 2;
     if (player.x - halfWidth < 0) player.x = halfWidth;
     if (player.x + halfWidth > canvas.width) player.x = canvas.width - halfWidth;
-    if (player.y - halfHeight < 0) player.y = halfHeight;
+    if (player.y < halfHeight) player.y = halfHeight;
     if (player.y + halfHeight > canvas.height) player.y = canvas.height - halfHeight;
+
+    //根據實際位置是否改變，來最終決定isMoving狀態
+    player.isMoving = (player.x !== oldX || player.y !== oldY);
+
 
 
     //繪製物件
-    interactiveObjects.forEach(interactiveObject => {
-        context.fillStyle = interactiveObject.color;
-        context.fillRect(interactiveObject.x, interactiveObject.y, interactiveObject.width, interactiveObject.height);
+    interactiveObjects.forEach(obj => {
+        context.drawImage(obj.image, obj.x, obj.y, obj.width, obj.height);
     });
 
-    // 繪製玩家
-    context.fillStyle = player.color;
-    context.fillRect(player.x - halfWidth, player.y - halfHeight, player.width, player.height);
-
-
+    //更新並繪製玩家動畫 (此區塊現在會根據正確的 isMoving 狀態來執行)
+    const config = animationConfig[player.direction];
+    if (player.isMoving) {
+        player.animationTimer++;
+        if (player.animationTimer >= player.animationDelay) {
+            player.animationFrameIndex = (player.animationFrameIndex + 1) % config.frames.length;
+            player.currentFrame = config.frames[player.animationFrameIndex];
+            player.animationTimer = 0;
+        }
+    } else {
+        player.currentFrame = config.standingFrame;
+        //如果是從「移動」剛變成「靜止」的這一幀，就重設動畫影格索引
+        if (player.wasMoving) { 
+            player.animationFrameIndex = 0;
+        }
+    }
+    const row = config.row;
+    const col = player.currentFrame;
+    const imageToDraw = playerImages[row] ? playerImages[row][col] : null;
+    if (imageToDraw) {
+      context.drawImage(
+          imageToDraw,
+          player.x - halfWidth, player.y - halfHeight,
+          player.width, player.height
+      );
+    }
+    
     //碰撞偵測與互動
+    const playerFeetCollisionWidth = player.width * 0.4;
+    const playerFeetCollisionHeight = player.height * 0.2;
+    const playerFeetX = player.x;
+    const playerFeetY = player.y + player.height/2 - playerFeetCollisionHeight/2;
+
     let interacting = false;
     interactiveObjects.forEach((obj, index) => {
         if (
-            player.x > obj.x && player.x < obj.x + obj.width &&
-            player.y > obj.y && player.y < obj.y + obj.height
+            playerFeetX - playerFeetCollisionWidth/2 < obj.x + obj.width &&
+            playerFeetX + playerFeetCollisionWidth/2 > obj.x &&
+            playerFeetY - playerFeetCollisionHeight/2 < obj.y + obj.height &&
+            playerFeetY + playerFeetCollisionHeight/2 > obj.y
         ) {
-            if(messageTemplates[index+1]) {
-                messageBox.innerHTML = messageTemplates[index+1].innerHTML;
+            if (messageTemplates[index + 1]) {
+                messageBox.innerHTML = messageTemplates[index + 1].innerHTML;
             }
             interacting = true;
         }
     });
+    if (!interacting) { messageBox.innerHTML = messageTemplates[0].innerHTML; }
 
-    //如果沒有跟任何物件互動，就顯示預設訊息
-    if (!interacting) {
-        messageBox.innerHTML = messageTemplates[0].innerHTML;
-    }
-
-    //請求瀏覽器在下一次重繪前呼叫gameLoop函數
     requestAnimationFrame(gameLoop);
 }
 
-//啟動遊戲迴圈
-gameLoop();
+
+//遊戲啟動流程
+Promise.all([
+    preloadPlayerImages(),
+    preloadObjectImages(objectImagePaths)
+])
+.then(([playerResult, loadedObjectImages]) => {
+    console.log(playerResult);
+    interactiveObjects = loadedObjectImages.map((img, i) => {
+        const spacing = canvas.width / (numObjects + 1);
+        const yPos = (canvas.height / 2) - (objectHeight / 2);
+        const xPos = (spacing * (i + 1)) - (objectWidth / 2);
+        return { x: xPos, y: yPos, width: objectWidth, height: objectHeight, image: img };
+    });
+    gameLoop();
+})
+.catch(error => {
+    console.error("圖片載入失敗:", error);
+    alert("部分網頁資源載入失敗，請檢查網路連線或檔案路徑後重新整理。");
+});
