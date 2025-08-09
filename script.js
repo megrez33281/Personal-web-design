@@ -87,14 +87,14 @@ const player = {
     width: PLAYER_DISPLAY_WIDTH,
     height: PLAYER_DISPLAY_HEIGHT,
     isMoving: false,
-    wasMoving: false, //記錄上一幀的移動狀態
+    wasMoving: false,
     direction: 'down',
     animationFrameIndex: 0,
     currentFrame: 0,
     animationTimer: 0,
     animationDelay: 12,
 };
-player.currentFrame = animationConfig[player.direction].standingFrame; //初始化站立影格
+player.currentFrame = animationConfig[player.direction].standingFrame;
 
 let interactiveObjects = [];
 const numObjects = 4;
@@ -135,22 +135,17 @@ function handleKeyboardMovement() {
 function gameLoop() {
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-
-    //在所有移動計算前，先記下當前位置和上一幀的移動狀態
     const oldX = player.x;
     const oldY = player.y;
     player.wasMoving = player.isMoving;
 
-    //處理所有可能的移動輸入
-    handleKeyboardMovement(); //處理鍵盤
+    handleKeyboardMovement();
 
-    //處理滑鼠
     const dx = player.targetX - player.x;
     const dy = player.targetY - player.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance > player.speed) {
-        //只有當沒有鍵盤輸入時，才讓滑鼠控制方向
         if (!Object.keys(keysPressed).length) {
              if (Math.abs(dx) > Math.abs(dy)) {
                 player.direction = dx > 0 ? 'right' : 'left';
@@ -165,25 +160,38 @@ function gameLoop() {
         player.y = player.targetY;
     }
     
-    //處理邊界碰撞，這會修正player.x和player.y
+    // ======================================================
+    // ==================== 關鍵修正處 =======================
+    // ======================================================
     const halfWidth = player.width / 2;
     const halfHeight = player.height / 2;
-    if (player.x - halfWidth < 0) player.x = halfWidth;
-    if (player.x + halfWidth > canvas.width) player.x = canvas.width - halfWidth;
-    if (player.y < halfHeight) player.y = halfHeight;
-    if (player.y + halfHeight > canvas.height) player.y = canvas.height - halfHeight;
 
-    //根據實際位置是否改變，來最終決定isMoving狀態
+    // 當角色碰到邊界時，不僅要修正他的位置，也要修正他的「目標」
+    if (player.x - halfWidth < 0) {
+        player.x = halfWidth;
+        player.targetX = player.x; // 更新目標，讓他停止嘗試移動
+    }
+    if (player.x + halfWidth > canvas.width) {
+        player.x = canvas.width - halfWidth;
+        player.targetX = player.x; // 更新目標
+    }
+    // (順便修正了您的y軸上方碰撞判斷)
+    if (player.y - halfHeight < 0) {
+        player.y = halfHeight;
+        player.targetY = player.y; // 更新目標
+    }
+    if (player.y + halfHeight > canvas.height) {
+        player.y = canvas.height - halfHeight;
+        player.targetY = player.y; // 更新目標
+    }
+
     player.isMoving = (player.x !== oldX || player.y !== oldY);
 
 
-
     //繪製物件
-    interactiveObjects.forEach(obj => {
-        context.drawImage(obj.image, obj.x, obj.y, obj.width, obj.height);
-    });
+    interactiveObjects.forEach(obj => { context.drawImage(obj.image, obj.x, obj.y, obj.width, obj.height); });
 
-    //更新並繪製玩家動畫 (此區塊現在會根據正確的 isMoving 狀態來執行)
+    //更新並繪製玩家動畫
     const config = animationConfig[player.direction];
     if (player.isMoving) {
         player.animationTimer++;
@@ -194,7 +202,6 @@ function gameLoop() {
         }
     } else {
         player.currentFrame = config.standingFrame;
-        //如果是從「移動」剛變成「靜止」的這一幀，就重設動畫影格索引
         if (player.wasMoving) { 
             player.animationFrameIndex = 0;
         }
@@ -203,11 +210,7 @@ function gameLoop() {
     const col = player.currentFrame;
     const imageToDraw = playerImages[row] ? playerImages[row][col] : null;
     if (imageToDraw) {
-      context.drawImage(
-          imageToDraw,
-          player.x - halfWidth, player.y - halfHeight,
-          player.width, player.height
-      );
+      context.drawImage( imageToDraw, player.x - halfWidth, player.y - halfHeight, player.width, player.height );
     }
     
     //碰撞偵測與互動
@@ -215,7 +218,6 @@ function gameLoop() {
     const playerFeetCollisionHeight = player.height * 0.2;
     const playerFeetX = player.x;
     const playerFeetY = player.y + player.height/2 - playerFeetCollisionHeight/2;
-
     let interacting = false;
     interactiveObjects.forEach((obj, index) => {
         if (
@@ -224,9 +226,7 @@ function gameLoop() {
             playerFeetY - playerFeetCollisionHeight/2 < obj.y + obj.height &&
             playerFeetY + playerFeetCollisionHeight/2 > obj.y
         ) {
-            if (messageTemplates[index + 1]) {
-                messageBox.innerHTML = messageTemplates[index + 1].innerHTML;
-            }
+            if (messageTemplates[index + 1]) { messageBox.innerHTML = messageTemplates[index + 1].innerHTML; }
             interacting = true;
         }
     });
@@ -237,10 +237,7 @@ function gameLoop() {
 
 
 //遊戲啟動流程
-Promise.all([
-    preloadPlayerImages(),
-    preloadObjectImages(objectImagePaths)
-])
+Promise.all([ preloadPlayerImages(), preloadObjectImages(objectImagePaths) ])
 .then(([playerResult, loadedObjectImages]) => {
     console.log(playerResult);
     interactiveObjects = loadedObjectImages.map((img, i) => {
