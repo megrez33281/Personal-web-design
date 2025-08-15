@@ -160,9 +160,7 @@ function gameLoop() {
         player.y = player.targetY;
     }
     
-    // ======================================================
-    // ==================== 關鍵修正處 =======================
-    // ======================================================
+
     const halfWidth = player.width / 2;
     const halfHeight = player.height / 2;
 
@@ -226,7 +224,7 @@ function gameLoop() {
             playerFeetY - playerFeetCollisionHeight/2 < obj.y + obj.height &&
             playerFeetY + playerFeetCollisionHeight/2 > obj.y
         ) {
-            if (messageTemplates[index + 1]) { messageBox.innerHTML = messageTemplates[index + 1].innerHTML; }
+            if (messageTemplates[index]) { messageBox.innerHTML = messageTemplates[index].innerHTML; }
             interacting = true;
         }
     });
@@ -246,6 +244,19 @@ Promise.all([ preloadPlayerImages(), preloadObjectImages(objectImagePaths) ])
         const xPos = (spacing * (i + 1)) - (objectWidth / 2);
         return { x: xPos, y: yPos, width: objectWidth, height: objectHeight, image: img };
     });
+
+    //取得Home物件(陣列中的第一個)
+    const homeObject = interactiveObjects[0];
+
+    //計算Home物件的中心點
+    const homeCenterX = homeObject.x + (homeObject.width / 2);
+    const homeCenterY = homeObject.y + (homeObject.height / 2);
+
+    //將玩家的初始位置和目標位置，都設定為Home物件的中心點
+    player.x = homeCenterX;
+    player.y = homeCenterY;
+    player.targetX = homeCenterX;
+    player.targetY = homeCenterY;
     gameLoop();
 })
 .catch(error => {

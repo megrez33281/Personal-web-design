@@ -20,23 +20,78 @@ body {
     image-rendering: crisp-edges;
     /* 移除預設邊距 */
     margin: 0;
-    font-family: sans-serif; /* 您可以換成喜歡的字體 */
+    font-family: sans-serif; 
 }
 
-/* --- 上方的藍色訊息顯示框 --- */
+/* --- 上方的訊息顯示框 --- */
 #message-box {
     box-sizing: border-box; 
-    width: 80%;
-    height: 80%;
-    margin: 0 auto;
-    background-color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    flex-direction: column; /* 讓內容垂直堆疊 */
+    justify-content: center; /* 垂直置中 */
+    align-items: center;     /* 水平置中 */
 
-    /* 當內容超出高度時，自動出現垂直捲軸 */
+    width: 80%;
+    max-width: 1200px; /* 在超大螢幕上限制最大寬度 */
+    height: 80%;   
+    
+    margin: 0 auto; 
+    font-size: 20px;
+    padding: 40px; /* 增加足夠的內部留白 */
+    background-color: rgba(255, 255, 255, 0.9); /* 可以讓背景稍微不透明一點，文字更清晰 */
+    border-radius: 15px; /* 圓角讓外觀更柔和 */
+    box-shadow: 0 4px B20px rgba(0, 0, 0, 0.1); /* 加上一點細微的陰影增加層次感 */
+
+    /* 當內容超出時，會自動出現捲軸 */
     overflow-y: auto;
+}
+
+/* 接下來，設定 message-box 內部所有元素的樣式 */
+#message-box h2,
+#message-box p,
+#message-box h4,
+#message-box ul {
+    text-align: left; /* 為了閱讀舒適，文字內容保持靠左對齊 */
+    max-width: 650px; /* 限制文字區塊的最大寬度，避免文字行過長難以閱讀 */
+    width: 100%;      /* 確保在 max-width 的限制內，寬度能正常延展 */
 }
 
 #message-box h2 {
     margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 2.2em; /* 讓主標題更醒目 */
+    color: #333;
+}
+
+#message-box p {
+    font-size: 1.1em;
+    line-height: 1.7; /* 增加行高，提升閱讀舒適度 */
+    margin-bottom: 20px;
+    color: #555;
+}
+
+#message-box h4 {
+    font-size: 1.5em;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd; /* 在副標題下加一條細線，區分區塊 */
+    padding-bottom: 10px;
+    color: #444;
+}
+
+#message-box ul {
+    font-size: 1.1em;
+    line-height: 1.8;
+    padding-left: 25px; /* 讓列表的縮排更清楚 */
+    color: #555;
+}
+
+#message-box code {
+    background-color: #e9e9e9;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #d63384; /* 給程式碼一點顏色 */
 }
 
 /*下方的遊戲互動畫布*/
