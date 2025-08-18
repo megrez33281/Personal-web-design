@@ -10,20 +10,29 @@
 <body>
 
 
-    <!-- 上方的藍色訊息顯示框 -->
-     <div id="message-box">
-        <h2 id="message-title">歡迎來到我的世界！</h2>
-        <p id="message-content">
-            試著在下方區域移動，探索看看吧！點擊滑鼠可以指定移動的目的地。
-        </p>
-    </div>
+    <div id="top-section">
+        <div id="message-box">
+            <h2 id="message-title"></h2>
+            <p id="message-content"></p>
+        </div>
+
+    </div> 
 
     <!-- 下方的遊戲互動畫布 -->
     <canvas id="game-canvas"></canvas>
 
-    
-    
 
+    
+    <!-- =================================== -->
+    <!--         物件定義區塊         -->
+    <!-- =================================== -->
+    <div id="object-definitions" style="display: none;">
+        <div class="canvas-object-def" data-img-src="picture/Home.png"></div>
+        <div class="canvas-object-def" data-img-src="picture/About.png"></div>
+        <div class="canvas-object-def" data-img-src="picture/Works.png"></div>
+        <div class="canvas-object-def" data-img-src="picture/Skill.png"></div>
+    </div>
+    
     <!-- =================================== -->
     <!--           內容模板區塊             -->
     <!-- =================================== -->
@@ -46,13 +55,27 @@
         </div>
 
         <div id="about-me-content">
-            <h2>關於我 (About Me)</h2>
-            <p>你好！我是一位熱愛創造與設計的開發者。</p>
-            <p>這個網站是我用來展示作品與分享想法的小天地。</p>
-            <!-- 在這裡加入圖片！ -->
-            <!--img src="your-avatar.png" alt="我的頭像" style="max-width: 80px; border-radius: 50%;"-->
-        </div>
+            <h2>About Me</h2>
+            <p>Hello! I'm FAN, JIA-CI, a student at National Yang Ming Chiao Tung University with a deep passion for the world of computer graphics and software development.</p>
+            <p>I thrive on the challenge of exploring the intricacies of graphics processing and building practical utilities. Turning complex ideas into functional, visually engaging applications is what drives me.</p>
+            
+            <h4>Connect with Me</h4>
+            <ul class="icon-links">
+                <li>
+                    <!-- Email Icon -->
+                    <a href="mailto:phecda980106gemini@gmail.com">
+                        <img src="picture/Email.png" alt="Email Icon">
+                    </a>
+                </li>
+                <li>
+                    <!-- GitHub Icon -->
+                    <a href="https://github.com/megrez33281">
+                        <img src="picture/Github.png" alt="GitHub Icon">
+                    </a>
+                </li>
 
+            </ul>
+        </div>
         <div id="portfolio-content">
             <h2>我的作品集 (Portfolio)</h2>
             <p>這裡放置了我的精選作品，包含<strong>網頁設計</strong>、<em>應用程式開發</em>與一些有趣的小專案。每一個專案都代表了我的熱情與努力。</p>

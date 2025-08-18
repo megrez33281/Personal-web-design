@@ -26,6 +26,19 @@ const animationConfig = {
 
 let playerImages = [[], [], []];
 
+// [全新] 建立一個物件來儲存滑鼠的即時位置
+const mousePos = { x: 0, y: 0 };
+
+// [全新] 監聽滑鼠移動事件，更新 mousePos 物件
+canvas.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    mousePos.x = (event.clientX - rect.left) * scaleX;
+    mousePos.y = (event.clientY - rect.top) * scaleY;
+});
+
+
 //預載入所有玩家圖片
 function preloadPlayerImages() {
     const imagePaths = [];
@@ -57,7 +70,6 @@ function preloadPlayerImages() {
 }
 
 //預載入物件圖片
-const objectImagePaths = [ 'picture/Home.png', 'picture/About.png', 'picture/Works.png', 'picture/Skill.png' ];
 function preloadObjectImages(paths) {
     const promises = paths.map(path => {
         return new Promise((resolve, reject) => {
@@ -96,8 +108,9 @@ const player = {
 };
 player.currentFrame = animationConfig[player.direction].standingFrame;
 
+let currentDisplayingMessageId = -1;
+
 let interactiveObjects = [];
-const numObjects = 4;
 const objectWidth = 80;
 const objectHeight = 80;
 
@@ -106,13 +119,9 @@ const objectHeight = 80;
 canvas.addEventListener('click', (event) => {
     Object.keys(keysPressed).forEach(key => delete keysPressed[key]);
     
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const mouseX = (event.clientX - rect.left) * scaleX;
-    const mouseY = (event.clientY - rect.top) * scaleY;
-    player.targetX = mouseX;
-    player.targetY = mouseY;
+    // 直接使用已追蹤的滑鼠位置
+    player.targetX = mousePos.x;
+    player.targetY = mousePos.y;
 });
 
 
@@ -160,36 +169,52 @@ function gameLoop() {
         player.y = player.targetY;
     }
     
-
     const halfWidth = player.width / 2;
     const halfHeight = player.height / 2;
-
-    // 當角色碰到邊界時，不僅要修正他的位置，也要修正他的「目標」
-    if (player.x - halfWidth < 0) {
-        player.x = halfWidth;
-        player.targetX = player.x; // 更新目標，讓他停止嘗試移動
-    }
-    if (player.x + halfWidth > canvas.width) {
-        player.x = canvas.width - halfWidth;
-        player.targetX = player.x; // 更新目標
-    }
-    // (順便修正了您的y軸上方碰撞判斷)
-    if (player.y - halfHeight < 0) {
-        player.y = halfHeight;
-        player.targetY = player.y; // 更新目標
-    }
-    if (player.y + halfHeight > canvas.height) {
-        player.y = canvas.height - halfHeight;
-        player.targetY = player.y; // 更新目標
-    }
+    if (player.x - halfWidth < 0) { player.x = halfWidth; player.targetX = player.x; }
+    if (player.x + halfWidth > canvas.width) { player.x = canvas.width - halfWidth; player.targetX = player.x; }
+    if (player.y - halfHeight < 0) { player.y = halfHeight; player.targetY = player.y; }
+    if (player.y + halfHeight > canvas.height) { player.y = canvas.height - halfHeight; player.targetY = player.y; }
 
     player.isMoving = (player.x !== oldX || player.y !== oldY);
 
 
-    //繪製物件
-    interactiveObjects.forEach(obj => { context.drawImage(obj.image, obj.x, obj.y, obj.width, obj.height); });
+    //用來判斷是否要改變滑鼠指標
+    let isHoveringAnyObject = false; 
 
-    //更新並繪製玩家動畫
+    interactiveObjects.forEach(obj => {
+        // 檢查滑鼠是否在物件的原始範圍內
+        const isHovering = (
+            mousePos.x > obj.x && mousePos.x < obj.x + obj.width &&
+            mousePos.y > obj.y && mousePos.y < obj.y + obj.height
+        );
+        
+        if (isHovering) {
+            isHoveringAnyObject = true;
+            obj.targetScale = 1.15; // 懸停時，目標放大 1.15 倍
+        } else {
+            obj.targetScale = 1.0; // 否則，恢復原狀
+        }
+
+        // 使用平滑演算法，讓目前的比例逐漸趨近目標比例
+        const scaleSpeed = 0.1;
+        obj.currentScale += (obj.targetScale - obj.currentScale) * scaleSpeed;
+
+        // 根據目前的縮放比例，計算繪製時的尺寸和位置
+        const scaledWidth = obj.width * obj.currentScale;
+        const scaledHeight = obj.height * obj.currentScale;
+        const drawX = obj.x - (scaledWidth - obj.width) / 2; // 從中心放大
+        const drawY = obj.y - (scaledHeight - obj.height) / 2;
+
+        // 使用計算後的位置和尺寸來繪製物件
+        context.drawImage(obj.image, drawX, drawY, scaledWidth, scaledHeight);
+    });
+    
+    // 根據是否懸停在任何物件上，改變滑鼠指標樣式
+    canvas.style.cursor = isHoveringAnyObject ? 'grab' : 'default';
+
+
+    //更新並繪製玩家動畫 (圖層在上)
     const config = animationConfig[player.direction];
     if (player.isMoving) {
         player.animationTimer++;
@@ -211,12 +236,14 @@ function gameLoop() {
       context.drawImage( imageToDraw, player.x - halfWidth, player.y - halfHeight, player.width, player.height );
     }
     
-    //碰撞偵測與互動
-    const playerFeetCollisionWidth = player.width * 0.4;
-    const playerFeetCollisionHeight = player.height * 0.2;
+    // 決定這一幀應該顯示哪個 ID
+    let newId = 0;
+    
+    const playerFeetCollisionWidth = player.width;
+    const playerFeetCollisionHeight = player.height;
     const playerFeetX = player.x;
     const playerFeetY = player.y + player.height/2 - playerFeetCollisionHeight/2;
-    let interacting = false;
+
     interactiveObjects.forEach((obj, index) => {
         if (
             playerFeetX - playerFeetCollisionWidth/2 < obj.x + obj.width &&
@@ -224,39 +251,60 @@ function gameLoop() {
             playerFeetY - playerFeetCollisionHeight/2 < obj.y + obj.height &&
             playerFeetY + playerFeetCollisionHeight/2 > obj.y
         ) {
-            if (messageTemplates[index]) { messageBox.innerHTML = messageTemplates[index].innerHTML; }
-            interacting = true;
-        }
+            newId = index;
+        }    
     });
-    if (!interacting) { messageBox.innerHTML = messageTemplates[0].innerHTML; }
+
+    if (newId !== currentDisplayingMessageId) {
+        if (messageTemplates[newId]) {
+            messageBox.innerHTML = messageTemplates[newId].innerHTML;
+        }
+        currentDisplayingMessageId = newId;
+    }
 
     requestAnimationFrame(gameLoop);
 }
 
 
 //遊戲啟動流程
-Promise.all([ preloadPlayerImages(), preloadObjectImages(objectImagePaths) ])
+const objectDefinitions = document.querySelectorAll('#object-definitions .canvas-object-def');
+const numObjects = objectDefinitions.length;
+const objectImagePaths = Array.from(objectDefinitions).map(def => {
+    return def.getAttribute('data-img-src');
+});
+
+Promise.all([
+    preloadPlayerImages(),
+    preloadObjectImages(objectImagePaths)
+])
 .then(([playerResult, loadedObjectImages]) => {
     console.log(playerResult);
     interactiveObjects = loadedObjectImages.map((img, i) => {
         const spacing = canvas.width / (numObjects + 1);
         const yPos = (canvas.height / 2) - (objectHeight / 2);
         const xPos = (spacing * (i + 1)) - (objectWidth / 2);
-        return { x: xPos, y: yPos, width: objectWidth, height: objectHeight, image: img };
+        
+
+        // 為物件添加縮放屬性
+        return { 
+            x: xPos, y: yPos, 
+            width: objectWidth, height: objectHeight, 
+            image: img,
+            currentScale: 1.0, //目前的縮放比例
+            targetScale: 1.0   //目標縮放比例
+        };
     });
 
-    //取得Home物件(陣列中的第一個)
-    const homeObject = interactiveObjects[0];
-
-    //計算Home物件的中心點
-    const homeCenterX = homeObject.x + (homeObject.width / 2);
-    const homeCenterY = homeObject.y + (homeObject.height / 2);
-
-    //將玩家的初始位置和目標位置，都設定為Home物件的中心點
-    player.x = homeCenterX;
-    player.y = homeCenterY;
-    player.targetX = homeCenterX;
-    player.targetY = homeCenterY;
+    if (interactiveObjects.length > 0) {
+        const homeObject = interactiveObjects[0];
+        const homeCenterX = homeObject.x + (homeObject.width / 2);
+        const homeCenterY = homeObject.y + (homeObject.height / 2);
+        player.x = homeCenterX;
+        player.y = homeCenterY;
+        player.targetX = homeCenterX;
+        player.targetY = homeCenterY;
+    }
+    
     gameLoop();
 })
 .catch(error => {
