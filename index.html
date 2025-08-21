@@ -77,14 +77,34 @@
             </ul>
         </div>
         <div id="portfolio-content">
-            <h2>我的作品集 (Portfolio)</h2>
-            <p>這裡放置了我的精選作品，包含<strong>網頁設計</strong>、<em>應用程式開發</em>與一些有趣的小專案。每一個專案都代表了我的熱情與努力。</p>
-            <a href="#" target="_blank">點此查看更多 →</a>
+            <h2>Portfolio</h2>
+            <p>More exciting projects are in the works. Please check back soon!</p>
+
         </div>
 
-         <div id="skills-content">
-            <h2>我的技能 (Skills)</h2>
-            <p>我擅長使用 JavaScript、HTML 與 CSS 打造互動式的網頁體驗。</p>
+        <div id="skills-content">
+            <h2>Skills</h2>
+            <!-- 全新的 SVG 技能圖表 -->
+            <div class="skill-chart-container">
+                <svg viewBox="0 0 100 100" class="skill-chart">
+                    <!-- 圖表切片 -->
+                    <g class="slices">
+                        <path class="skill-slice" id="skill-python"    d="M 50,50 L 50,0  A 50,50 0 0 1 100,50 Z"></path>
+                        <path class="skill-slice" id="skill-java"      d="M 50,50 L 100,50 A 50,50 0 0 1 50,100 Z"></path>
+                        <path class="skill-slice" id="skill-js-ts"     d="M 50,50 L 50,100 A 50,50 0 0 1 0,50   Z"></path>
+                        <path class="skill-slice" id="skill-c-cpp"     d="M 50,50 L 0,50   A 50,50 0 0 1 50,0   Z"></path>
+                    </g>
+                    <!-- 文字標籤 -->
+                    <g class="labels">
+                        <text x="75" y="35">Python</text>
+                        <text x="75" y="75">Java</text>
+                        <text x="25" y="70">
+                            <tspan x="25" dy="0">JS / TS</tspan>
+                        </text>
+                        <text x="25" y="35">C/C++</text>
+                    </g>
+                </svg>
+            </div>
         </div>
 
     </div><!-- 模板區塊結束 -->

@@ -143,3 +143,51 @@ body {
 #message-box ul.icon-links a:hover img {
     transform: scale(1.2);
 }
+
+
+/* 圖表容器 */
+.skill-chart-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    padding: 10px;
+}
+
+/* SVG 圖表本身 */
+.skill-chart {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.1));
+}
+
+/* 所有圖表切片的基礎樣式 */
+.skill-slice {
+    transition: transform 0.25s ease-out;
+    cursor: pointer; 
+}
+
+
+#skill-python { fill: #3776AB; }
+#skill-java   { fill: #f89820; } 
+#skill-js-ts  { fill: #F7DF1E; } 
+#skill-c-cpp  { fill: #00599C; }
+/* 圖表上的文字標籤樣式 */
+.skill-chart .labels text {
+    font-family: sans-serif;
+    font-size: 10px; 
+    font-weight: bold;
+    fill: #fff;
+    text-anchor: middle; 
+    pointer-events: none; 
+}
+/* 滑鼠懸停時的彈起效果 */
+.skill-slice:hover {
+    scale:(1.08);
+    translate:(x, y);
+}
+#skill-python:hover { transform: scale(1.0) translate(4px, -4px); }
+#skill-java:hover { transform: scale(1.0) translate(4px, 4px); }
+#skill-js-ts:hover { transform: scale(1.0) translate(-4px, 4px); }
+#skill-c-cpp:hover { transform: scale(1.00) translate(-4px, -4px); }

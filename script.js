@@ -26,10 +26,10 @@ const animationConfig = {
 
 let playerImages = [[], [], []];
 
-// [全新] 建立一個物件來儲存滑鼠的即時位置
+// 建立一個物件來儲存滑鼠的即時位置
 const mousePos = { x: 0, y: 0 };
 
-// [全新] 監聽滑鼠移動事件，更新 mousePos 物件
+// 監聽滑鼠移動事件，更新 mousePos 物件
 canvas.addEventListener('mousemove', (event) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -124,6 +124,55 @@ canvas.addEventListener('click', (event) => {
     player.targetY = mousePos.y;
 });
 
+// 更新Canvas尺寸
+function updateCanvasSize() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+}
+
+// 根據當前Canvas尺寸，重新計算所有物件的位置
+function recalculateObjectPositions() {
+    const numObjects = interactiveObjects.length;
+    if (numObjects === 0) return; //如果物件還沒載入好，就直接返回
+
+    const spacing = canvas.width / (numObjects + 1);
+    const yPos = (canvas.height / 2) - (objectHeight / 2);
+
+    interactiveObjects.forEach((obj, i) => {
+        obj.x = (spacing * (i + 1)) - (objectWidth / 2);
+        obj.y = yPos;
+    });
+}
+
+
+// 根據當前互動狀態，將玩家移動回初始位置
+function recalculatePlayerPosition() {
+    const homeObject = interactiveObjects[0];
+     const homeCenterX = homeObject.x + (homeObject.width / 2);
+     const homeCenterY = homeObject.y + (homeObject.height / 2);
+    player.x = homeCenterX;
+    player.y = homeCenterY;
+    player.targetX = homeCenterX;
+    player.targetY = homeCenterY;
+}
+
+function CollisionJudge(x1,y1,width1,height1,x2,y2,width2,height2){
+
+    return  x1 - width1/2 < x2 + width2 &&
+            x1 + width1/2 > x2 &&
+            y1 - height1/2 < y2 + height2 &&
+            y1 + height1/2 > y2
+}
+
+
+// 監聽視窗的resize事件
+window.addEventListener('resize', () => {
+    updateCanvasSize();
+    recalculateObjectPositions(); 
+    recalculatePlayerPosition();  
+
+});
+
 
 //鍵盤移動處理
 function handleKeyboardMovement() {
@@ -193,7 +242,7 @@ function gameLoop() {
             isHoveringAnyObject = true;
             obj.targetScale = 1.15; // 懸停時，目標放大 1.15 倍
         } else {
-            obj.targetScale = 1.0; // 否則，恢復原狀
+            obj.targetScale = 1.0; // 恢復原狀
         }
 
         // 使用平滑演算法，讓目前的比例逐漸趨近目標比例
@@ -245,12 +294,7 @@ function gameLoop() {
     const playerFeetY = player.y + player.height/2 - playerFeetCollisionHeight/2;
 
     interactiveObjects.forEach((obj, index) => {
-        if (
-            playerFeetX - playerFeetCollisionWidth/2 < obj.x + obj.width &&
-            playerFeetX + playerFeetCollisionWidth/2 > obj.x &&
-            playerFeetY - playerFeetCollisionHeight/2 < obj.y + obj.height &&
-            playerFeetY + playerFeetCollisionHeight/2 > obj.y
-        ) {
+        if (CollisionJudge(playerFeetX, playerFeetY, playerFeetCollisionWidth, playerFeetCollisionHeight, obj.x, obj.y, obj.width, obj.height)) {
             newId = index;
         }    
     });
@@ -264,6 +308,8 @@ function gameLoop() {
 
     requestAnimationFrame(gameLoop);
 }
+
+
 
 
 //遊戲啟動流程
@@ -295,6 +341,10 @@ Promise.all([
         };
     });
 
+    // 設定初始位置
+    recalculateObjectPositions();
+    recalculateObjectPositions();
+    
     if (interactiveObjects.length > 0) {
         const homeObject = interactiveObjects[0];
         const homeCenterX = homeObject.x + (homeObject.width / 2);
